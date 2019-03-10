@@ -1,0 +1,14 @@
+---
+- name: Wait until mysqld starts
+  pause: 
+    seconds: 120
+- name: configure master for replication
+  command: >
+    docker exec mysql{{ item }} bash -c "MYSQL_PWD=; mysql -uroot -e \"GRANT REPLICATION SLAVE ON *.* TO 'slaveuser'@'%' IDENTIFIED BY 'password'; FLUSH PRIVILEGES; FLUSH TABLES WITH READ LOCK;\""
+  with_sequence: start=1 end=1
+
+- name: Set and start replication
+  command: >
+    docker exec mysql{{ item }} bash -c "MYSQL_PWD=; mysql -uroot  -e \"stop slave; reset slave; change master to master_host='mysql1', master_user='slaveuser', MASTER_PASSWORD='password', master_log_file='master-bin.000001', master_log_pos = 4; start slave;\""
+  with_sequence: start=2 end="{{ servers }}" 
+

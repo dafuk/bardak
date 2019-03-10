@@ -1,0 +1,25 @@
+- name: Deploy Elk Server
+  hosts: elk-server
+  remote_user: root
+  roles:
+    - docker
+    - elk-docker
+  tags: 
+    - elk
+
+- name: Deploy Filebeat
+  hosts: elk-server
+  remote_user: root
+  roles:
+    - filebeat
+  tags:
+    - filebeat
+- name: deploy sqls
+  hosts: elk-server
+  remote_user: root
+  roles:
+    - sqlcluster
+  tags:
+    - sqlcluster
+  vars:
+    - servers: 2

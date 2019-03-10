@@ -1,0 +1,56 @@
+- name: add apt-transport-https
+  apt:
+    name: "apt-transport-https"
+    state: present
+    update_cache: yes
+
+- name: Add an Apt signing key for elastic 
+  apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+- name: Add an Apt signing key for docker
+  apt_key:
+    url: https://download.docker.com/linux/debian/gpg 
+    state: present
+- name: Add Docker CE repository
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+    state: present
+    
+- name: Install docker-ce and deps
+  apt:
+    name: "{{ item  }}"
+    state: present
+  with_items: "{{ packages_preparation }}"
+
+- name: Install pip docker library
+  pip:
+    name: docker
+
+- name: Install pip docker-compose library
+  pip:
+    name: docker-compose
+
+- name: Install pip dependencies
+  pip:
+    name: "{{ item }}"
+  with_items: "{{ pip_dependencies }}"
+
+- name: create docker group
+  group:
+    gid: 1991
+    name: docker
+    state: present
+
+- name: add docker group
+  user:
+    name: "{{ item }}"
+    groups: docker
+    append: true
+  with_items: "{{ users }}"
+
+- name: enable docker services
+  service:
+    name: docker
+    enabled: true
+    state: started

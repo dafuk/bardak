@@ -1,0 +1,7 @@
+---
+- include: network.yml
+- include: mysql-conf.yml
+- include: container.yml
+- include: set-replication.yml
+  when: servers|int > 1
+- include: datastuff.yml

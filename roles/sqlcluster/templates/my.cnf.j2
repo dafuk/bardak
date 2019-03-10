@@ -1,0 +1,8 @@
+
+[mysqld]
+
+server-id = {{ item }}
+log-basename=master
+log-bin
+binlog-format=row
+binlog-do-db=employees

@@ -1,0 +1,128 @@
+---
+
+- name: Create config directory
+  file:
+    path: "/etc/logstash/config"
+    state: directory
+    mode: 0777
+
+- name: Copy config file
+  template:
+    src: "logstash.yml.j2"
+    dest: "/etc/logstash/config/logstash.yml"
+    mode: 0766
+
+- name: Copy pipelines configuration
+  template:
+    src: "pipelines.yml.j2"
+    dest: "/etc/logstash/config/pipelines.yml"
+    mode: 0766
+
+- name: Create Pipelines directory
+  file:
+    path: "/etc/logstash/config/pipeline"
+    state: directory
+    mode: 0777
+
+- name: Copy pipeline_1 configuration
+  template:
+    src: "pipeline.conf.j2"
+    dest: "/etc/logstash/config/pipeline/pipeline.conf"
+    mode: 0766
+- name: fake kibana config dir
+  file:
+    path: /etc/kibana/config
+    state: directory
+
+- name: Override kibana configuration
+  template:
+    src: "kibana.yml.j2"
+    dest: "/etc/kibana/config/kibana.yml"
+    mode: 0766
+
+- name: Deploy ES, Logstash and Kibana in 3 Docker containers
+  docker_service:
+    project_name: "elk_docker"
+    definition:
+      version: "2"
+      services:
+        elasticsearch:
+          hostname: elasticsearch
+          image: "docker.elastic.co/elasticsearch/elasticsearch:6.6.0"
+          ports:
+            - "9200:9200"
+            - "9300:9300"
+          environment:
+            discovery.type: single-node
+        kibana:
+          image: "docker.elastic.co/kibana/kibana:6.6.0"
+          ports:
+            - "5601:5601"
+          environment:
+              SERVER_NAME: kibana
+              ELASTICSEARCH_URL: http://10.0.2.15:9200
+          #    XPACK_MONITORING_ENABLED: "false"
+          volumes:
+            - "/etc/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml"
+        logstash:
+          image: "docker.elastic.co/logstash/logstash:6.6.0"
+          ports:
+            - "5044:5044"
+          volumes:
+            - "/etc/logstash/config/:/usr/share/logstash/config/"
+
+- name: install curator p
+  pip:
+    name:
+      - elasticsearch-curator
+      - argparse
+- name: install curator crontab
+  cron: name='curator_delete'
+        minute='0' hour='10'
+        user='root'
+        job='/usr/local/bin/curator --host localhost delete indices --time-unit days --timestring "\%Y.\%m.\%d" --older-than 7'
+        cron_file='curator_delete'
+        state='present'
+  tags: [cron]
+
+- name: install curator crontab
+  cron: name='curator_close'
+        minute='45' hour='9'
+        user='root'
+        job='/usr/local/bin/curator --host localhost close indices --time-unit days --timestring "\%Y.\%m.\%d" --older-than 7'
+        cron_file='curator_close'
+        state='present'
+  tags: [cron]
+- name:  nginx for webserver
+  apt:
+    name: nginx
+    state: present
+
+
+
+- name:  openssl for self signed
+  apt:
+    name: openssl
+    state: present
+
+- name: boom self-signed SSL certificate
+  command:
+    openssl req -new -nodes -x509 -subj "/C=IL/ST=Israel/L=Ben/O=Mayhem/CN=vm.local" -days 9001 -keyout /etc/nginx/selfsigned.key -out /etc/nginx/selfsigned.cert -extensions v3_ca
+  args:
+- name: forgot passlib for py
+  pip:
+    name:
+      - passlib
+- htpasswd:
+    path: /etc/nginx/passwdfile
+    name: user
+    password: 'sisma'
+    owner: root
+    group: www-data
+    mode: 0640
+- name: nginx vhost with selfsigned
+  template:
+    src: "nginx.vhost.j2"
+    dest: "/etc/nginx/sites-available/default"
+- name: restart nginx - damn systemd
+  command: systemctl restart nginx

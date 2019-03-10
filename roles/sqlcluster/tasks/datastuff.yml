@@ -1,0 +1,6 @@
+- name: install git
+  apt:
+    name: git
+    state: present
+- name: do population magically
+  shell: "mysqlhost=$(docker inspect -f '{''{range .NetworkSettings.Networks}''}{''{.IPAddress}''} {''{end}''}' mysql1 | awk '{print $1}'); git clone https://github.com/datacharmer/test_db; cd test_db;  mysql -h $mysqlhost < employees.sql"

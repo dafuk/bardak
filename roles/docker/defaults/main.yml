@@ -1,0 +1,11 @@
+---
+packages_preparation:
+  - python-pip
+  - apt-transport-https
+  - curl
+  - gnupg2
+  - software-properties-common
+  - docker-ce
+pip_dependencies:
+  - docker-pycreds
+  - dockerpty

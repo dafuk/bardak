@@ -1,0 +1,13 @@
+filebeat.prospectors:
+- type: log
+  paths:
+   - '/var/lib/docker/containers/*/*.log'
+  json.message_key: log
+  json.keys_under_root: true
+  processors:
+  - add_docker_metadata: ~
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+output.logstash:
+  hosts: ["127.0.0.1:5044"]

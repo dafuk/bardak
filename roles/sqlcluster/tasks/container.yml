@@ -1,0 +1,19 @@
+---
+- name: Create containers
+  docker_container:
+      name: "mysql{{ item }}"
+      image: "mariadb/server:10.3"
+      hostname: "mysql{{ item }}"
+      detach: yes
+      volumes: 
+        - "/opt/my.cnf.{{ item }}:/etc/mysql/my.cnf"
+      networks:
+        - name: "{{ docker_network_name }}"
+      env:
+        MYSQL_ALLOW_EMPTY_PASSWORD: True
+  with_sequence: start=1 end="{{ servers }}"
+
+- name: install forgotten pre-req - mysql client
+  apt:
+    name: git
+    state: present
